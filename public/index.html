@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .expense-form {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .expense-list {
+            margin-top: 20px;
+        }
+        .expense-item {
+            background-color: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">Expense Tracker</h1>
+        
+        <div class="expense-form">
+            <h3>Add New Expense</h3>
+            <form id="expenseForm">
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="description" required>
+                </div>
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Amount</label>
+                    <input type="number" class="form-control" id="amount" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label for="category" class="form-label">Category</label>
+                    <input type="text" class="form-control" id="category" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Add Expense</button>
+            </form>
+        </div>
+
+        <div class="expense-list">
+            <h3>Expenses</h3>
+            <div id="expensesList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch and display expenses
+        async function fetchExpenses() {
+            try {
+                const response = await fetch('/api/expenses');
+                const expenses = await response.json();
+                const expensesList = document.getElementById('expensesList');
+                expensesList.innerHTML = expenses.map(expense => `
+                    <div class="expense-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5>${expense.description}</h5>
+                                <p class="mb-1">Category: ${expense.category}</p>
+                                <p class="mb-1">Date: ${new Date(expense.date).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                                <h4>$${expense.amount.toFixed(2)}</h4>
+                                <button class="btn btn-danger btn-sm" onclick="deleteExpense('${expense._id}')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error fetching expenses:', error);
+            }
+        }
+
+        // Add new expense
+        document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const expense = {
+                description: document.getElementById('description').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                category: document.getElementById('category').value
+            };
+
+            try {
+                await fetch('/api/expenses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(expense)
+                });
+                e.target.reset();
+                fetchExpenses();
+            } catch (error) {
+                console.error('Error adding expense:', error);
+            }
+        });
+
+        // Delete expense
+        async function deleteExpense(id) {
+            try {
+                await fetch(`/api/expenses/${id}`, {
+                    method: 'DELETE'
+                });
+                fetchExpenses();
+            } catch (error) {
+                console.error('Error deleting expense:', error);
+            }
+        }
+
+        // Initial load
+        fetchExpenses();
+    </script>
+</body>
+</html> 
